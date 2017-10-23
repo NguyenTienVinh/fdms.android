@@ -95,8 +95,8 @@ public class DeviceRemoteDataSource implements DeviceDataSource.RemoteDataSource
         boughtDate = createPartFromString(String.valueOf(format.format(device.getBoughtDate())));
         originalPrice = createPartFromString(device.getOriginalPrice());
         isMeetingRoom = createPartFromString(String.valueOf(device.isDeviceMeetingRoom()));
-        if (device.getMeetingRoomId() > 0) {
-            meetingRoomId = createPartFromString(String.valueOf(device.getMeetingRoomId()));
+        if (device.getMeetingRoom().getId() > 0) {
+            meetingRoomId = createPartFromString(String.valueOf(device.getMeetingRoom().getId()));
             params.put(MEETING_ROOM_ID, meetingRoomId);
         }
         if (device.getSerialNumber() != null) {
@@ -170,16 +170,17 @@ public class DeviceRemoteDataSource implements DeviceDataSource.RemoteDataSource
             deviceStatusId = createPartFromString(String.valueOf(device.getDeviceStatusId()));
             params.put(DEVICE_STATUS_ID, deviceStatusId);
         }
-        if (device.getVendorId() > 0) {
-            deviceVendorId = createPartFromString(String.valueOf(device.getVendorId()));
+        if (device.getVendor().getId() > 0) {
+            deviceVendorId = createPartFromString(String.valueOf(device.getVendor().getId()));
             params.put(VENDOR_ID, deviceVendorId);
         }
-        if (device.getMarkerId() > 0) {
-            deviceMakerId = createPartFromString(String.valueOf(device.getMarkerId()));
+        if (device.getMarker().getId() > 0) {
+            deviceMakerId = createPartFromString(String.valueOf(device.getMarker().getId()));
             params.put(MAKER_ID, deviceMakerId);
         }
-        if (device.getMeetingRoomId() > 0) {
-            deviceMeetingRoomId = createPartFromString(String.valueOf(device.getMeetingRoomId()));
+        if (device.getMeetingRoom().getId() > 0) {
+            deviceMeetingRoomId =
+                createPartFromString(String.valueOf(device.getMeetingRoom().getId()));
             params.put(MEETING_ROOM_ID, deviceMeetingRoomId);
         }
         if (device.getSerialNumber() != null) {

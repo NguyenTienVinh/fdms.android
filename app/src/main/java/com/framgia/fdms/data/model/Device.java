@@ -32,6 +32,9 @@ public class Device extends BaseObservable implements Parcelable {
     @SerializedName("production_name")
     private String mProductionName;
     @Expose
+    @SerializedName("branch")
+    private String mBranch;
+    @Expose
     @SerializedName("device_status_id")
     private int mDeviceStatusId;
     @Expose
@@ -40,6 +43,9 @@ public class Device extends BaseObservable implements Parcelable {
     @Expose
     @SerializedName("meeting_room_id")
     private int mMeetingRoomId;
+    @Expose
+    @SerializedName("meeting_room")
+    private Producer mMeetingRoom;
     @Expose
     @SerializedName("picture")
     private Picture mPicture;
@@ -87,8 +93,12 @@ public class Device extends BaseObservable implements Parcelable {
     private Date mReturnDate;
 
     private boolean mIsSelected;
-    private Status mVendor;
-    private Status mMarker;
+    @Expose
+    @SerializedName("vendor")
+    private Producer mVendor;
+    @Expose
+    @SerializedName("maker")
+    private Producer mMarker;
     @Expose
     @SerializedName("vendor_id")
     private int mVendorId;
@@ -119,9 +129,11 @@ public class Device extends BaseObservable implements Parcelable {
         mDeviceId = in.readInt();
         mDeviceCode = in.readString();
         mProductionName = in.readString();
+        mBranch = in.readString();
         mDeviceStatusId = in.readInt();
         mDeviceCategoryId = in.readInt();
         mMeetingRoomId = in.readInt();
+        mMeetingRoom = in.readParcelable(Producer.class.getClassLoader());
         mPicture = in.readParcelable(Picture.class.getClassLoader());
         mOriginalPrice = in.readString();
         mPrintedCode = in.readString();
@@ -134,8 +146,8 @@ public class Device extends BaseObservable implements Parcelable {
         mStatus = in.readInt();
         mUser = in.readParcelable(User.class.getClassLoader());
         mIsSelected = in.readByte() != 0;
-        mVendor = in.readParcelable(Status.class.getClassLoader());
-        mMarker = in.readParcelable(Status.class.getClassLoader());
+        mVendor = in.readParcelable(Producer.class.getClassLoader());
+        mMarker = in.readParcelable(Producer.class.getClassLoader());
         mVendorId = in.readInt();
         mMarkerId = in.readInt();
         mWarranty = in.readString();
@@ -162,6 +174,7 @@ public class Device extends BaseObservable implements Parcelable {
         setDeviceId(device.getDeviceId());
         setDeviceCode(device.getDeviceCode());
         setProductionName(device.getProductionName());
+        setBranch(device.getBranch());
         setDeviceStatusId(device.getDeviceStatusId());
         setDeviceCategoryId(device.getDeviceCategoryId());
         setPicture(device.getPicture());
@@ -182,6 +195,7 @@ public class Device extends BaseObservable implements Parcelable {
         setMarkerId(device.getMarkerId());
         setMeetingRoomId(device.getMeetingRoomId());
         setDeviceMeetingRoom(device.isDeviceMeetingRoom());
+        setMeetingRoom(device.getMeetingRoom());
         setWarranty(device.getWarranty());
         setRam(device.getRam());
         setHardDriver(device.getHardDriver());
@@ -411,21 +425,21 @@ public class Device extends BaseObservable implements Parcelable {
     }
 
     @Bindable
-    public Status getVendor() {
+    public Producer getVendor() {
         return mVendor;
     }
 
-    public void setVendor(Status vendor) {
+    public void setVendor(Producer vendor) {
         mVendor = vendor;
         notifyPropertyChanged(BR.vendor);
     }
 
     @Bindable
-    public Status getMarker() {
+    public Producer getMarker() {
         return mMarker;
     }
 
-    public void setMarker(Status marker) {
+    public void setMarker(Producer marker) {
         mMarker = marker;
         notifyPropertyChanged(BR.marker);
     }
@@ -524,6 +538,26 @@ public class Device extends BaseObservable implements Parcelable {
         notifyPropertyChanged(BR.deviceDescription);
     }
 
+    @Bindable
+    public String getBranch() {
+        return mBranch;
+    }
+
+    public void setBranch(String branch) {
+        mBranch = branch;
+        notifyPropertyChanged(BR.branch);
+    }
+
+    @Bindable
+    public Producer getMeetingRoom() {
+        return mMeetingRoom;
+    }
+
+    public void setMeetingRoom(Producer meetingRoom) {
+        mMeetingRoom = meetingRoom;
+        notifyPropertyChanged(BR.meetingRoom);
+    }
+
     @Override
     public String toString() {
         return new Gson().toJson(this);
@@ -540,9 +574,11 @@ public class Device extends BaseObservable implements Parcelable {
         parcel.writeInt(mDeviceId);
         parcel.writeString(mDeviceCode);
         parcel.writeString(mProductionName);
+        parcel.writeString(mBranch);
         parcel.writeInt(mDeviceStatusId);
         parcel.writeInt(mDeviceCategoryId);
         parcel.writeInt(mMeetingRoomId);
+        parcel.writeParcelable(mMeetingRoom, i);
         parcel.writeParcelable(mPicture, i);
         parcel.writeString(mOriginalPrice);
         parcel.writeString(mPrintedCode);

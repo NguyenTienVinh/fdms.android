@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.android.databinding.library.baseAdapters.BR;
 import com.framgia.fdms.R;
 import com.framgia.fdms.data.model.Device;
+import com.framgia.fdms.data.model.Producer;
 import com.framgia.fdms.data.model.Status;
 import com.framgia.fdms.screen.selection.SelectionActivity;
 import com.framgia.fdms.screen.selection.SelectionType;
@@ -86,11 +87,10 @@ public class CreateDeviceViewModel extends BaseObservable
     private Status mCategory;
     private Status mStatus;
     private Status mBranch;
-    private Status mVendor;
-    private Status mMarker;
-    private Status mMeetingRoom;
+    private Producer mVendor, mMarker, mMeetingRoom;
     private Calendar mCalendar = Calendar.getInstance();
     private boolean mIsQrCode = true;
+    private boolean mIsBarCode;
     private Bitmap mDeviceCode;
     private int mProgressBarVisibility = GONE;
     private Navigator mNavigator;
@@ -107,10 +107,6 @@ public class CreateDeviceViewModel extends BaseObservable
             mDevice.setDeviceStatusId(AVAIABLE);
         } else {
             mDevice = device;
-            mCategory = new Status(device.getDeviceCategoryId(), device.getDeviceCategoryName());
-            setBoughtDate(Utils.stringBoughtDateDevice(device.getBoughtDate()));
-            mStatus = new Status(device.getDeviceStatusId(), device.getDeviceStatusName());
-            mIsAllowEditMeetingRoom = device.getDeviceStatusId() == AVAIABLE;
         }
         mDeviceType = type;
         mNavigator = new Navigator(activity);
@@ -202,6 +198,9 @@ public class CreateDeviceViewModel extends BaseObservable
     @Override
     public void setPresenter(CreateDeviceContract.Presenter presenter) {
         mPresenter = presenter;
+        if (mDeviceType == EDIT) {
+            mPresenter.getDeviceById(mDevice);
+        }
     }
 
     @Override
@@ -228,6 +227,22 @@ public class CreateDeviceViewModel extends BaseObservable
         bundle.putParcelable(BUNDLE_DEVICE, device);
         intent.putExtras(bundle);
         mNavigator.finishActivityWithResult(intent, RESULT_OK);
+    }
+
+    @Override
+    public void onGetDeviceSuccess(Device device) {
+        setDevice(device);
+        setCategory(new Status(device.getDeviceCategoryId(), device.getDeviceCategoryName()));
+        setBoughtDate(Utils.stringBoughtDateDevice(device.getBoughtDate()));
+        setStatus(new Status(device.getDeviceStatusId(), device.getDeviceStatusName()));
+        setAllowEditMeetingRoom(device.getDeviceStatusId() == AVAIABLE);
+        setBarCode(device.isBarcode());
+        setQrCode(!device.isBarcode());
+    }
+
+    @Override
+    public void onGetDeviceError(String error) {
+        mNavigator.showToast(error);
     }
 
     @Override
@@ -347,7 +362,7 @@ public class CreateDeviceViewModel extends BaseObservable
                     status.setId(DEFAULT_BRANCH_ID);
                     status.setName(DEFAULT_BRANCH_NAME);
                 }
-                setBranch(status);
+                mDevice.setBranch(status.getName());
                 if (mCategory != null && mCategory.getId() > 0) {
                     mPresenter.getDeviceCode(mCategory.getId(), mBranch.getId());
                 }
@@ -363,21 +378,21 @@ public class CreateDeviceViewModel extends BaseObservable
                     || status.getId() == OUT_OF_INDEX) {
                     status.setName(mContext.getString(R.string.title_empty));
                 }
-                setVendor(status);
+                mDevice.setVendor((Producer) status);
                 break;
             case REQUEST_MAKER:
                 if (status.getName().equals(mContext.getString(R.string.action_clear))
                     || status.getId() == OUT_OF_INDEX) {
                     status.setName(mContext.getString(R.string.title_empty));
                 }
-                setMarker(status);
+                mDevice.setMarker((Producer) status);
                 break;
             case REQUEST_MEETING_ROOM:
                 if (status.getName().equals(mContext.getString(R.string.action_clear))
                     || status.getId() == OUT_OF_INDEX) {
                     status.setName(mContext.getString(R.string.title_empty));
                 }
-                setMeetingRoom(status);
+                mDevice.setMeetingRoom((Producer) status);
                 break;
             default:
                 break;
@@ -491,12 +506,12 @@ public class CreateDeviceViewModel extends BaseObservable
     public void onUpdateSuccess(String message) {
         sUpdatedDevice.cloneDevice(mDevice);
         setProgressBarVisibility(GONE);
-        mNavigator.showToast(message);
         Intent intent = new Intent();
         Bundle bundle = new Bundle();
         bundle.putParcelable(BUNDLE_DEVICE, mDevice);
         intent.putExtras(bundle);
         mNavigator.finishActivityWithResult(intent, RESULT_OK);
+        Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -509,8 +524,14 @@ public class CreateDeviceViewModel extends BaseObservable
         return mActivity;
     }
 
+    @Bindable
     public Device getDevice() {
         return mDevice;
+    }
+
+    public void setDevice(Device device) {
+        mDevice = device;
+        notifyPropertyChanged(BR.device);
     }
 
     public DeviceStatusType getDeviceType() {
@@ -527,7 +548,7 @@ public class CreateDeviceViewModel extends BaseObservable
             mNavigator.showToast(R.string.error_bought_date_in_the_future);
             return;
         }
-        setBoughtDate( Utils.getStringDate(mCalendar.getTime(), mContext));
+        setBoughtDate(Utils.getStringDate(mCalendar.getTime(), mContext));
         mDevice.setBoughtDate(mCalendar.getTime());
     }
 
@@ -548,8 +569,20 @@ public class CreateDeviceViewModel extends BaseObservable
 
     public void setQrCode(boolean qrCode) {
         onGenerateBarCode(qrCode);
+        mDevice.setBarcode(false);
         mIsQrCode = qrCode;
         notifyPropertyChanged(BR.qrCode);
+    }
+
+    @Bindable
+    public boolean isBarCode() {
+        return !isQrCode();
+    }
+
+    public void setBarCode(boolean barCode) {
+        mIsBarCode = barCode;
+        mDevice.setBarcode(true);
+        notifyPropertyChanged(BR.barCode);
     }
 
     @Bindable
@@ -563,33 +596,22 @@ public class CreateDeviceViewModel extends BaseObservable
     }
 
     @Bindable
-    public Status getMeetingRoom() {
-        return mMeetingRoom;
-    }
-
-    public void setMeetingRoom(Status meetingRoom) {
-        mDevice.setMeetingRoomId(meetingRoom.getId());
-        mMeetingRoom = meetingRoom;
-        notifyPropertyChanged(BR.meetingRoom);
-    }
-
-    @Bindable
-    public Status getVendor() {
+    public Producer getVendor() {
         return mVendor;
     }
 
-    public void setVendor(Status vendor) {
+    public void setVendor(Producer vendor) {
         mDevice.setVendorId(vendor.getId());
         mVendor = vendor;
         notifyPropertyChanged(BR.vendor);
     }
 
     @Bindable
-    public Status getMarker() {
+    public Producer getMarker() {
         return mMarker;
     }
 
-    public void setMarker(Status marker) {
+    public void setMarker(Producer marker) {
         mDevice.setMarkerId(marker.getId());
         mMarker = marker;
         notifyPropertyChanged(BR.marker);

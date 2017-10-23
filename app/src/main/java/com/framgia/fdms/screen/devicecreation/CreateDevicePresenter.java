@@ -2,6 +2,7 @@ package com.framgia.fdms.screen.devicecreation;
 
 import android.text.TextUtils;
 import com.framgia.fdms.data.model.Device;
+import com.framgia.fdms.data.model.Producer;
 import com.framgia.fdms.data.source.DeviceRepository;
 import com.framgia.fdms.data.source.api.error.BaseException;
 import com.framgia.fdms.data.source.api.error.RequestError;
@@ -14,6 +15,7 @@ import io.reactivex.schedulers.Schedulers;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static com.framgia.fdms.utils.Constant.OUT_OF_INDEX;
 
 /**
  * Listens to user actions from the UI ({@link CreateDeviceActivity}), retrieves the data and
@@ -26,7 +28,7 @@ final class CreateDevicePresenter implements CreateDeviceContract.Presenter {
     private DeviceRepository mDeviceRepository;
 
     public CreateDevicePresenter(CreateDeviceContract.ViewModel viewModel,
-        DeviceRepository deviceRepository) {
+        DeviceRepository deviceRepository, Device device) {
         mViewModel = viewModel;
         mDeviceRepository = deviceRepository;
         mCompositeSubscription = new CompositeDisposable();
@@ -81,7 +83,6 @@ final class CreateDevicePresenter implements CreateDeviceContract.Presenter {
         if (!validateDataEditDevice(localDevice)) {
             return;
         }
-
         Disposable disposable = mDeviceRepository.updateDevice(localDevice)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -108,6 +109,25 @@ final class CreateDevicePresenter implements CreateDeviceContract.Presenter {
                 }
             });
         mCompositeSubscription.add(disposable);
+    }
+
+    @Override
+    public void getDeviceById(Device device) {
+        Disposable subscription = mDeviceRepository.getDevice(device.getId())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io())
+            .subscribe(new Consumer<Device>() {
+                @Override
+                public void accept(Device device) throws Exception {
+                    mViewModel.onGetDeviceSuccess(device);
+                }
+            }, new RequestError() {
+                @Override
+                public void onRequestError(BaseException error) {
+                    mViewModel.onGetDeviceError(error.getMessage());
+                }
+            });
+        mCompositeSubscription.add(subscription);
     }
 
     @Override
@@ -154,11 +174,11 @@ final class CreateDevicePresenter implements CreateDeviceContract.Presenter {
             isValid = false;
             mViewModel.onInputBoughtDateError();
         }
-        if (device.getVendorId() <= 0) {
+        if (device.getVendor().getId() <= 0) {
             isValid = false;
             mViewModel.onInputVendorError();
         }
-        if (device.getMarkerId() <= 0) {
+        if (device.getMarker().getId() <= 0) {
             isValid = false;
             mViewModel.onInputMakerError();
         }
@@ -178,7 +198,7 @@ final class CreateDevicePresenter implements CreateDeviceContract.Presenter {
             isValid = false;
             mViewModel.onInputOriginalPriceError();
         }
-        if (device.isDeviceMeetingRoom() && device.getMeetingRoomId() < 1) {
+        if (device.isDeviceMeetingRoom() && device.getMeetingRoom().getId() < 1) {
             isValid = false;
             mViewModel.onInputMeetingRoomError();
         }
@@ -192,8 +212,23 @@ final class CreateDevicePresenter implements CreateDeviceContract.Presenter {
     public boolean validateDataEditDevice(Device device) {
         boolean isValid = true;
         if (TextUtils.isEmpty(device.getProductionName())) {
-            mViewModel.onInputProductionNameError();
             isValid = false;
+            mViewModel.onInputProductionNameError();
+        }
+        if (TextUtils.isEmpty(device.getSerialNumber())) {
+            isValid = false;
+            mViewModel.onInputSerialNumberError();
+        }
+        if (TextUtils.isEmpty(device.getModelNumber())) {
+            isValid = false;
+            mViewModel.onInputModellNumberError();
+        }
+        if (device.getMeetingRoom() == null) {
+            device.setMeetingRoom(new Producer(OUT_OF_INDEX, ""));
+        }
+        if (device.isDeviceMeetingRoom() && device.getMeetingRoom().getId() < 1) {
+            isValid = false;
+            mViewModel.onInputMeetingRoomError();
         }
         return isValid;
     }

@@ -21,6 +21,10 @@ interface CreateDeviceContract {
 
         void onRegisterSuccess(Device device);
 
+        void onGetDeviceSuccess(Device device);
+
+        void onGetDeviceError(String error);
+
         void onInputProductionNameError();
 
         void onInputSerialNumberError();
@@ -71,6 +75,8 @@ interface CreateDeviceContract {
         void registerDevice(Device device);
 
         void updateDevice(Device device);
+
+        void getDeviceById(Device device);
 
         boolean validateDataInput(Device device);
 
